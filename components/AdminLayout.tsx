@@ -1,10 +1,28 @@
+"use client"
+
 import Link from "next/link"
+import { useSession } from "next-auth/react"
+import SignIn from "@/components/SignIn"
 
 export default function AdminLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    const { data: session, status } = useSession()
+
+    if (status === "loading") {
+        return <div className="flex items-center justify-center h-screen">Loading...</div>
+    }
+
+    if (!session) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <SignIn />
+            </div>
+        )
+    }
+
     return (
         <div className="flex h-screen bg-gray-100">
             <aside className="w-64 bg-white shadow-md">
