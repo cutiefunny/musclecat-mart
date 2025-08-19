@@ -127,7 +127,8 @@ export function ShoppingMall() {
 
       {/* Products Grid */}
       <div className="px-4 pb-20">
-        <div className="grid grid-cols-2 gap-4">
+        {/* --- ⬇️ grid-cols-5 추가 ⬇️ --- */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="overflow-hidden">
               <CardContent className="p-0">
