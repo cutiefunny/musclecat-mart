@@ -14,6 +14,7 @@ export default function AdminLayout({
                 <nav className="mt-6">
                     <Link href="/admin/users" className="block px-6 py-2.5 text-gray-600 hover:bg-gray-200">회원 관리</Link>
                     <Link href="/admin/products" className="block px-6 py-2.5 text-gray-600 hover:bg-gray-200">제품 관리</Link>
+                    <Link href="/admin/categories" className="block px-6 py-2.5 text-gray-600 hover:bg-gray-200">카테고리 관리</Link>
                     <Link href="/admin/orders" className="block px-6 py-2.5 text-gray-600 hover:bg-gray-200">주문 관리</Link>
                     <Link href="/admin/shipping" className="block px-6 py-2.5 text-gray-600 hover:bg-gray-200">배송 관리</Link>
                     <Link href="/admin/banners" className="block px-6 py-2.5 text-gray-600 hover:bg-gray-200">배너 관리</Link>

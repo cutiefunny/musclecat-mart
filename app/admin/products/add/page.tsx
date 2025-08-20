@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { db, storage } from "@/lib/firebase/clientApp";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  getDocs,
+  query,
+  orderBy,
+  DocumentData,
+} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Button } from "@/components/ui/button";
-import styles from '../../admin.module.css'; // CSS 모듈 가져오기
+import styles from "../../admin.module.css"; // CSS 모듈 가져오기
+
+// Category 타입 정의
+interface Category extends DocumentData {
+  id: string;
+  name: string;
+}
 
 export default function AddProductPage() {
   const router = useRouter();
@@ -19,6 +33,24 @@ export default function AddProductPage() {
   const [price, setPrice] = useState(0);
   const [show, setShow] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]); // 카테고리 목록 상태 추가
+
+  // Firestore에서 카테고리 목록을 불러옵니다.
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const q = query(collection(db, "categories"), orderBy("name", "asc"));
+        const querySnapshot = await getDocs(q);
+        const categoriesData = querySnapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as Category)
+        );
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("카테고리 로딩 실패:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const handleOptionChange = (index: number, field: string, value: string) => {
     const newOptions = [...options];
@@ -70,7 +102,7 @@ export default function AddProductPage() {
         category,
         stockQuantity,
         description,
-        options: options.filter(opt => opt.name && opt.value),
+        options: options.filter((opt) => opt.name && opt.value),
         price,
         show,
         images: imageUrls,
@@ -79,7 +111,6 @@ export default function AddProductPage() {
 
       alert("제품이 성공적으로 등록되었습니다.");
       router.push("/admin/products");
-
     } catch (error) {
       console.error("제품 등록 실패:", error);
       alert("제품 등록 중 오류가 발생했습니다.");
@@ -93,7 +124,9 @@ export default function AddProductPage() {
       <h1 className="text-3xl font-bold mb-6">새 제품 등록</h1>
       <form onSubmit={handleSubmit} className={styles.formContainer}>
         <div className={styles.formGroup}>
-          <label htmlFor="name" className={styles.label}>제품명</label>
+          <label htmlFor="name" className={styles.label}>
+            제품명
+          </label>
           <input
             id="name"
             type="text"
@@ -105,7 +138,10 @@ export default function AddProductPage() {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="category" className={styles.label}>카테고리</label>
+          <label htmlFor="category" className={styles.label}>
+            카테고리
+          </label>
+          {/* --- ⬇️ 카테고리 select 부분을 동적으로 렌더링 ⬇️ --- */}
           <select
             id="category"
             value={category}
@@ -114,16 +150,18 @@ export default function AddProductPage() {
             required
           >
             <option value="">카테고리를 선택하세요</option>
-            <option value="Plushies">Plushies</option>
-            <option value="Accessories">Accessories</option>
-            <option value="Stickers">Stickers</option>
-            <option value="Pins">Pins</option>
-            <option value="Clothing">Clothing</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.name}>
+                {cat.name}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="price" className={styles.label}>가격</label>
+          <label htmlFor="price" className={styles.label}>
+            가격
+          </label>
           <input
             id="price"
             type="number"
@@ -133,9 +171,11 @@ export default function AddProductPage() {
             required
           />
         </div>
-        
+
         <div className={styles.formGroup}>
-          <label htmlFor="stockQuantity" className={styles.label}>재고 수량</label>
+          <label htmlFor="stockQuantity" className={styles.label}>
+            재고 수량
+          </label>
           <input
             id="stockQuantity"
             type="number"
@@ -146,7 +186,9 @@ export default function AddProductPage() {
         </div>
 
         <div className={styles.formGroup}>
-          <label htmlFor="description" className={styles.label}>제품 설명</label>
+          <label htmlFor="description" className={styles.label}>
+            제품 설명
+          </label>
           <textarea
             id="description"
             value={description}
@@ -157,14 +199,14 @@ export default function AddProductPage() {
         </div>
 
         <div className={styles.formGroup}>
-            <label className={styles.label}>이미지 (최대 5개)</label>
-            <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleImageChange}
-                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
-            />
+          <label className={styles.label}>이미지 (최대 5개)</label>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleImageChange}
+            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+          />
         </div>
 
         <div className={styles.formGroup}>
@@ -185,29 +227,40 @@ export default function AddProductPage() {
                 onChange={(e) => handleOptionChange(index, "value", e.target.value)}
                 className={styles.input}
               />
-              <Button type="button" onClick={() => removeOption(index)} variant="destructive" size="sm">삭제</Button>
+              <Button
+                type="button"
+                onClick={() => removeOption(index)}
+                variant="destructive"
+                size="sm"
+              >
+                삭제
+              </Button>
             </div>
           ))}
           {options.length < 3 && (
-            <Button type="button" onClick={addOption} className="mt-2" size="sm">옵션 추가</Button>
+            <Button type="button" onClick={addOption} className="mt-2" size="sm">
+              옵션 추가
+            </Button>
           )}
         </div>
-        
+
         <div className="flex items-center">
-            <input
-                id="show"
-                type="checkbox"
-                checked={show}
-                onChange={(e) => setShow(e.target.checked)}
-                className={styles.checkbox}
-            />
-            <label htmlFor="show" className={styles.checkboxLabel}>제품 노출</label>
+          <input
+            id="show"
+            type="checkbox"
+            checked={show}
+            onChange={(e) => setShow(e.target.checked)}
+            className={styles.checkbox}
+          />
+          <label htmlFor="show" className={styles.checkboxLabel}>
+            제품 노출
+          </label>
         </div>
 
         <div className="flex justify-end">
-            <Button type="submit" disabled={loading}>
-                {loading ? '저장 중...' : '제품 등록'}
-            </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? "저장 중..." : "제품 등록"}
+          </Button>
         </div>
       </form>
     </div>
