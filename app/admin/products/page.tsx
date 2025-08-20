@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/firebase/clientApp";
-import { collection, getDocs, query, orderBy, DocumentData } from "firebase/firestore";
-import styles from '../admin.module.css';
+import { collection, getDocs, query, orderBy, DocumentData, Timestamp } from "firebase/firestore";
 
 // Product 타입을 정의합니다.
 interface Product extends DocumentData {
@@ -15,7 +14,7 @@ interface Product extends DocumentData {
     price: number;
     stockQuantity: number;
     show: boolean;
-    createdAt: any;
+    createdAt: Timestamp; // any 대신 Timestamp 타입 사용
 }
 
 export default function ProductsPage() {
@@ -47,7 +46,6 @@ export default function ProductsPage() {
         router.push('/admin/products/add');
     };
 
-    // --- ⬇️ 편집 페이지 이동 함수 추가 ⬇️ ---
     const handleEditProduct = (id: string) => {
         router.push(`/admin/products/edit/${id}`);
     };
@@ -72,7 +70,6 @@ export default function ProductsPage() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가격</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">재고</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">노출 상태</th>
-                            {/* --- ⬇️ 편집 헤더 추가 ⬇️ --- */}
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">편집</th>
                         </tr>
                     </thead>
@@ -90,7 +87,6 @@ export default function ProductsPage() {
                                         {product.show ? '노출' : '숨김'}
                                     </span>
                                 </td>
-                                {/* --- ⬇️ 편집 버튼 추가 ⬇️ --- */}
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <Button variant="outline" size="sm" onClick={() => handleEditProduct(product.id)}>
                                         편집

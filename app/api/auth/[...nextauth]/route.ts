@@ -1,7 +1,8 @@
-import NextAuth, { SessionStrategy } from "next-auth"
+import NextAuth, { AuthOptions, SessionStrategy } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 
-export const authOptions = {
+// 'export' 키워드를 제거해야 합니다.
+const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -9,9 +10,17 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, token }: any) {
-      session.user.id = token.sub
-      return session
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
+      }
+      return session;
     },
   },
   session: {

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Heart, ShoppingCart, Home, Grid3X3, User, Search } from "lucide-react"
+import Image from "next/image"
 
 const products = [
   {
@@ -87,7 +88,7 @@ export function ShoppingMall() {
       <header className="sticky top-0 z-50 bg-card border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src='/images/icon.png' alt="Icon" className="h-8 w-8" />
+            <Image src='/images/icon.png' alt="Icon" width={32} height={32} />
             <h1 className="text-lg font-semibold text-foreground">근육고양이잡화점</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -133,9 +134,11 @@ export function ShoppingMall() {
             <Card key={product.id} className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="relative">
-                  <img
+                  <Image
                     src={product.image || "/placeholder.svg"}
                     alt={product.name}
+                    width={200}
+                    height={160}
                     className="w-full h-40 object-cover"
                   />
                   <Button

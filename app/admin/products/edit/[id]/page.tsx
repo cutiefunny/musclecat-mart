@@ -7,6 +7,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Button } from "@/components/ui/button";
 import styles from '../../../admin.module.css';
+import Image from "next/image";
 
 // Product 타입을 정의합니다.
 interface Product {
@@ -199,7 +200,7 @@ export default function EditProductPage() {
                     <div className="flex flex-wrap gap-2 mb-2">
                         {existingImageUrls.map(url => (
                             <div key={url} className="relative">
-                                <img src={url} alt="기존 이미지" className="w-24 h-24 object-cover rounded-md" />
+                                <Image src={url} alt="기존 이미지" width={96} height={96} className="w-24 h-24 object-cover rounded-md" />
                                 <button type="button" onClick={() => handleDeleteExistingImage(url)} className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs">&times;</button>
                             </div>
                         ))}
