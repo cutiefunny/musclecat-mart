@@ -64,6 +64,11 @@ export default function CartPage() {
         <div className="min-h-screen bg-background">
             <Header />
             <main className="p-4 pb-20">
+                <header className="mb-6">
+                    <Link href="/" className="text-indigo-600 hover:text-indigo-800">&lt; 쇼핑 계속하기</Link>
+                    <h1 className="text-3xl font-bold text-center mt-2">장바구니</h1>
+                </header>
+
                 {cartItems.length === 0 ? (
                     <div className="text-center text-gray-500 py-10">
                         <p>장바구니가 비어 있습니다.</p>

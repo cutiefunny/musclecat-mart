@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
 import { db } from "@/lib/firebase/clientApp"
 import { collection, getDocs, query, where, orderBy, DocumentData } from "firebase/firestore"
@@ -143,6 +142,7 @@ export function ShoppingMall() {
         localStorage.setItem('cart', JSON.stringify(cart));
         window.dispatchEvent(new Event('cartUpdated')); // 상태 변경 이벤트 발생
     } catch(e) {
+        console.error('장바구니에 상품을 담는 중 오류가 발생했습니다:', e);
         alert('장바구니에 상품을 담는 중 오류가 발생했습니다.');
     }
   };
