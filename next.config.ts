@@ -1,7 +1,17 @@
 import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig = {
-  reactStrictMode: true
+  reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https" as const,
+        hostname: "firebasestorage.googleapis.com",
+        port: "",
+        pathname: "**",
+      },
+    ],
+  },
 };
 
 export default withPWA({
