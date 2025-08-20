@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { Header } from "@/components/Header";
@@ -64,6 +63,7 @@ export default function CartPage() {
         <div className="min-h-screen bg-background">
             <Header />
             <main className="p-4 pb-20">
+
                 {cartItems.length === 0 ? (
                     <div className="text-center text-gray-500 py-10">
                         <p>장바구니가 비어 있습니다.</p>
