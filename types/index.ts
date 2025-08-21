@@ -30,3 +30,11 @@ export interface Category extends DocumentData {
     description: string;
     image: string;
 }
+
+export interface Address {
+    recipient: string;
+    phone: string;
+    postalCode: string;
+    address: string;
+    detailAddress: string;
+}

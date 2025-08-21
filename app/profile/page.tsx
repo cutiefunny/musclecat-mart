@@ -7,7 +7,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import SignIn from "@/components/SignIn";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, LogOut, Package } from "lucide-react";
+import { ChevronRight, LogOut, Package, MapPin } from "lucide-react"; // MapPin 아이콘 추가
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -61,14 +61,23 @@ export default function ProfilePage() {
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />
                 </div>
             </Link>
-            {/* --- ⬇️ 이 부분을 수정했습니다 ⬇️ --- */}
+            {/* --- ⬇️ 배송지 관리 메뉴를 추가합니다 ⬇️ --- */}
+            <Link href="/profile/address" className="block">
+                <div className="flex items-center justify-between p-4 bg-card rounded-lg shadow-sm active:bg-muted">
+                    <div className="flex items-center gap-3">
+                        <MapPin className="w-5 h-5 text-muted-foreground"/>
+                        <span className="font-medium">배송지 관리</span>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+            </Link>
+            {/* --- ⬆️ 여기까지 추가 ⬆️ --- */}
             <Button onClick={() => signOut({ callbackUrl: '/' })} variant="ghost" className="w-full justify-start p-4 bg-card rounded-lg shadow-sm text-destructive font-medium active:bg-muted">
                 <div className="flex items-center gap-3">
                     <LogOut className="w-5 h-5"/>
                     <span>로그아웃</span>
                 </div>
             </Button>
-            {/* --- ⬆️ 여기까지 수정 ⬆️ --- */}
         </div>
       </main>
       <Footer />

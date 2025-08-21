@@ -1,7 +1,8 @@
 import NextAuth, { AuthOptions, SessionStrategy } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
-import { db } from "@/lib/firebase/clientApp"; 
-import { doc, setDoc, serverTimestamp } from "firebase/firestore"; 
+import NaverProvider from "next-auth/providers/naver"; // NaverProvider import 추가
+import { db } from "@/lib/firebase/clientApp";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const authOptions: AuthOptions = {
   providers: [
@@ -9,9 +10,14 @@ const authOptions: AuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }),
+    // --- ⬇️ NaverProvider를 추가합니다 ⬇️ ---
+    NaverProvider({
+      clientId: process.env.NAVER_CLIENT_ID as string,
+      clientSecret: process.env.NAVER_CLIENT_SECRET as string,
+    }),
+    // --- ⬆️ 여기까지 추가 ⬆️ ---
   ],
   callbacks: {
-    // --- ⬇️ 'profile' 파라미터를 제거했습니다 ⬇️ ---
     async signIn({ user, account }) {
       if (user) {
         try {
@@ -22,8 +28,8 @@ const authOptions: AuthOptions = {
             email: user.email,
             image: user.image,
             provider: account?.provider,
-            lastLogin: serverTimestamp(), 
-          }, { merge: true }); 
+            lastLogin: serverTimestamp(),
+          }, { merge: true });
         } catch (error) {
           console.error("Firestore user save error:", error);
           return false;
