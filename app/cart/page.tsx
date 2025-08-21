@@ -2,54 +2,36 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-
-interface CartItem {
-    cartItemId: string;
-    id: string;
-    name: string;
-    price: number;
-    image: string;
-    quantity: number;
-    options: Record<string, string>;
-}
+import { useCart } from "@/lib/hooks/useCart";
 
 export default function CartPage() {
-    const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const { items: cartItems, removeItem, updateQuantity, saveToFirestore } = useCart();
+    const { data: session } = useSession();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        try {
-            const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
-            setCartItems(cartData);
-        } catch (e) {
-            console.error("장바구니 정보 로딩 실패:", e);
-        } finally {
-            setLoading(false);
-        }
+        setLoading(false);
     }, []);
-
-    const updateLocalStorage = (items: CartItem[]) => {
-        localStorage.setItem('cart', JSON.stringify(items));
-        setCartItems(items);
-        window.dispatchEvent(new Event('cartUpdated')); // 상태 변경 이벤트 발생
-    };
 
     const handleQuantityChange = (cartItemId: string, newQuantity: number) => {
         if (newQuantity < 1) return;
-        const updatedItems = cartItems.map(item =>
-            item.cartItemId === cartItemId ? { ...item, quantity: newQuantity } : item
-        );
-        updateLocalStorage(updatedItems);
+        updateQuantity(cartItemId, newQuantity);
+        if (session?.user?.id) {
+            saveToFirestore(session.user.id, cartItems);
+        }
     };
 
     const handleRemoveItem = (cartItemId: string) => {
         if (window.confirm("이 상품을 장바구니에서 삭제하시겠습니까?")) {
-            const updatedItems = cartItems.filter(item => item.cartItemId !== cartItemId);
-            updateLocalStorage(updatedItems);
+            removeItem(cartItemId);
+            if (session?.user?.id) {
+                saveToFirestore(session.user.id, cartItems);
+            }
         }
     };
 
@@ -63,7 +45,6 @@ export default function CartPage() {
         <div className="min-h-screen bg-background">
             <Header />
             <main className="p-4 pb-20">
-
                 {cartItems.length === 0 ? (
                     <div className="text-center text-gray-500 py-10">
                         <p>장바구니가 비어 있습니다.</p>

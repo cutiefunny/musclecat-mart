@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from 'next/navigation';
@@ -8,34 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, Search } from "lucide-react";
-
-interface CartItem {
-    cartItemId: string;
-}
+import { useCart } from '@/lib/hooks/useCart';
 
 export function Header() {
-    const [cartCount, setCartCount] = useState(0);
+    const { items } = useCart();
+    const cartCount = items.length;
     const [searchQuery, setSearchQuery] = useState("");
     const pathname = usePathname();
     const router = useRouter();
     const isCartPage = pathname === '/cart';
-
-    useEffect(() => {
-        const updateCartCount = () => {
-            const cartData: CartItem[] = JSON.parse(localStorage.getItem('cart') || '[]');
-            setCartCount(cartData.length);
-        };
-
-        updateCartCount();
-
-        window.addEventListener('storage', updateCartCount);
-        window.addEventListener('cartUpdated', updateCartCount);
-
-        return () => {
-            window.removeEventListener('storage', updateCartCount);
-            window.removeEventListener('cartUpdated', updateCartCount);
-        };
-    }, []);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,8 +36,8 @@ export function Header() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder="Search"
-                            className="w-full pl-10 text-gray-500"
+                            placeholder="상품을 검색해보세요..."
+                            className="w-full pl-10"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />

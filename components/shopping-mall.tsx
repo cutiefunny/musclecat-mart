@@ -6,39 +6,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { db } from "@/lib/firebase/clientApp"
-import { collection, getDocs, query, where, orderBy, DocumentData } from "firebase/firestore"
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore" // DocumentData 제거
 import { Header } from "./Header"
 import { Footer } from "./Footer"
-
-// --- ⬇️ 타입 정의 ⬇️ ---
-interface ProductOption {
-    name: string;
-    value: string;
-}
-
-interface Product extends DocumentData {
-  id: string;
-  name: string;
-  price: number;
-  images: string[];
-  category: string;
-  options: ProductOption[];
-}
-
-interface Category extends DocumentData {
-    id: string;
-    name: string;
-}
-
-interface CartItem {
-    cartItemId: string; // 상품 ID와 옵션을 조합한 고유 ID
-    id: string; // 상품 자체의 ID
-    name: string;
-    price: number;
-    image: string;
-    quantity: number;
-    options: Record<string, string>;
-}
+import { useCart } from "@/lib/hooks/useCart"
+import { useSession } from "next-auth/react"
+import type { Product, Category } from "@/types"
+import { useCartStore } from "@/lib/hooks/useCart" // Zustand 스토어 직접 import
 
 // --- ⬇️ 옵션 선택 모달 컴포넌트 ⬇️ ---
 function AddToCartModal({
@@ -114,34 +88,18 @@ export function ShoppingMall({ searchQuery }: { searchQuery?: string }) {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { addItem, saveToFirestore } = useCart();
+  const { data: session } = useSession();
 
-  const addToCart = (product: Product, options: Record<string, string>) => {
+  const handleRealAddToCart = (product: Product, options: Record<string, string>) => {
     try {
-        const cart: CartItem[] = JSON.parse(localStorage.getItem('cart') || '[]');
-
-        const optionsIdentifier = Object.keys(options).sort().map(key => `${key}:${options[key]}`).join(',');
-        const cartItemId = `${product.id}-${optionsIdentifier}`;
-
-        const existingItemIndex = cart.findIndex(item => item.cartItemId === cartItemId);
-
-        if (existingItemIndex > -1) {
-            cart[existingItemIndex].quantity += 1;
-        } else {
-            const newCartItem: CartItem = {
-                cartItemId,
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.images?.[0] || '',
-                quantity: 1,
-                options,
-            };
-            cart.push(newCartItem);
+        addItem(product, options);
+        if (session?.user?.id) {
+            const updatedCart = useCartStore.getState().items;
+            saveToFirestore(session.user.id, updatedCart);
         }
-
-        localStorage.setItem('cart', JSON.stringify(cart));
-        window.dispatchEvent(new Event('cartUpdated')); // 상태 변경 이벤트 발생
-    } catch(e) {
+        window.dispatchEvent(new Event('cartUpdated'));
+    } catch (e) {
         console.error('장바구니에 상품을 담는 중 오류가 발생했습니다:', e);
         alert('장바구니에 상품을 담는 중 오류가 발생했습니다.');
     }
@@ -180,10 +138,9 @@ export function ShoppingMall({ searchQuery }: { searchQuery?: string }) {
         searchQuery ? product.name.toLowerCase().includes(searchQuery.toLowerCase()) : true
     );
 
-
   const handleAddToCartClick = (product: Product) => {
     if (!product.options || product.options.length === 0) {
-        addToCart(product, {});
+        handleRealAddToCart(product, {});
     } else {
         setSelectedProduct(product);
         setIsModalOpen(true);
@@ -192,7 +149,7 @@ export function ShoppingMall({ searchQuery }: { searchQuery?: string }) {
 
   const handleConfirmAddToCart = (selectedOptions: Record<string, string>) => {
       if (selectedProduct) {
-        addToCart(selectedProduct, selectedOptions);
+        handleRealAddToCart(selectedProduct, selectedOptions);
       }
   };
 
@@ -208,40 +165,42 @@ export function ShoppingMall({ searchQuery }: { searchQuery?: string }) {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-
+      
       <main className="pb-20">
-        {/* Category Filter */}
         {!searchQuery && (
-            <div className="px-4 py-4">
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                    <Button
-                    key="All"
-                    variant={selectedCategory === "All" ? "default" : "secondary"}
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => setSelectedCategory("All")}
-                    >
-                    All
-                    </Button>
-                {categories.map((category) => (
-                    <Button
-                    key={category.id}
-                    variant={selectedCategory === category.name ? "default" : "secondary"}
-                    size="sm"
-                    className="whitespace-nowrap"
-                    onClick={() => setSelectedCategory(category.name)}
-                    >
-                    {category.name}
-                    </Button>
-                ))}
-                </div>
-            </div>
+          <div className="px-4 py-4">
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                  <Button
+                  key="All"
+                  variant={selectedCategory === "All" ? "default" : "secondary"}
+                  size="sm"
+                  className="whitespace-nowrap"
+                  onClick={() => setSelectedCategory("All")}
+                  >
+                  All
+                  </Button>
+              {categories.map((category) => (
+                  <Button
+                  key={category.id}
+                  variant={selectedCategory === category.name ? "default" : "secondary"}
+                  size="sm"
+                  className="whitespace-nowrap"
+                  onClick={() => setSelectedCategory(category.name)}
+                  >
+                  {category.name}
+                  </Button>
+              ))}
+              </div>
+          </div>
         )}
 
-        {/* Products Grid */}
         <div className="px-4">
             {searchQuery && (
-                <div className="mb-2" style={{ marginBottom: "10px" }} />
+                <div className="mb-4">
+                    {/* --- ⬇️ 따옴표를 &apos; 로 수정했습니다 ⬇️ --- */}
+                    <h2 className="text-xl font-bold">&apos;{searchQuery}&apos; 검색 결과</h2>
+                    <p className="text-sm text-muted-foreground">{filteredProducts.length}개의 상품이 있습니다.</p>
+                </div>
             )}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {filteredProducts.map((product) => (
@@ -274,7 +233,6 @@ export function ShoppingMall({ searchQuery }: { searchQuery?: string }) {
 
       <Footer />
 
-      {/* 모달 렌더링 */}
       {isModalOpen && selectedProduct && (
           <AddToCartModal
               product={selectedProduct}
