@@ -107,7 +107,7 @@ function AddToCartModal({
     );
 }
 
-export function ShoppingMall() {
+export function ShoppingMall({ searchQuery }: { searchQuery?: string }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -172,10 +172,14 @@ export function ShoppingMall() {
     fetchData();
   }, []);
 
-  const filteredProducts =
-    selectedCategory === "All"
-      ? products
-      : products.filter((product) => product.category === selectedCategory);
+  const filteredProducts = products
+    .filter((product) =>
+        selectedCategory === "All" ? true : product.category === selectedCategory
+    )
+    .filter((product) =>
+        searchQuery ? product.name.toLowerCase().includes(searchQuery.toLowerCase()) : true
+    );
+
 
   const handleAddToCartClick = (product: Product) => {
     if (!product.options || product.options.length === 0) {
@@ -204,36 +208,41 @@ export function ShoppingMall() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="pb-20">
         {/* Category Filter */}
-        <div className="px-4 py-4">
-            <div className="flex gap-2 overflow-x-auto pb-2">
-                <Button
-                key="All"
-                variant={selectedCategory === "All" ? "default" : "secondary"}
-                size="sm"
-                className="whitespace-nowrap"
-                onClick={() => setSelectedCategory("All")}
-                >
-                All
-                </Button>
-            {categories.map((category) => (
-                <Button
-                key={category.id}
-                variant={selectedCategory === category.name ? "default" : "secondary"}
-                size="sm"
-                className="whitespace-nowrap"
-                onClick={() => setSelectedCategory(category.name)}
-                >
-                {category.name}
-                </Button>
-            ))}
+        {!searchQuery && (
+            <div className="px-4 py-4">
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                    <Button
+                    key="All"
+                    variant={selectedCategory === "All" ? "default" : "secondary"}
+                    size="sm"
+                    className="whitespace-nowrap"
+                    onClick={() => setSelectedCategory("All")}
+                    >
+                    All
+                    </Button>
+                {categories.map((category) => (
+                    <Button
+                    key={category.id}
+                    variant={selectedCategory === category.name ? "default" : "secondary"}
+                    size="sm"
+                    className="whitespace-nowrap"
+                    onClick={() => setSelectedCategory(category.name)}
+                    >
+                    {category.name}
+                    </Button>
+                ))}
+                </div>
             </div>
-        </div>
+        )}
 
         {/* Products Grid */}
         <div className="px-4">
+            {searchQuery && (
+                <div className="mb-2" style={{ marginBottom: "10px" }} />
+            )}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {filteredProducts.map((product) => (
                 <Card key={product.id} className="overflow-hidden">
