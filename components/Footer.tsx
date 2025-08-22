@@ -5,10 +5,10 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Home, Grid3X3, User, ShoppingCart } from 'lucide-react';
-import { useCart } from '@/lib/hooks/useCart';
+import { useCartStore } from '@/lib/hooks/useCart';
 
 export function Footer() {
-    const { items } = useCart();
+    const items = useCartStore((state) => state.items);
     const cartCount = items.length;
     const pathname = usePathname();
 

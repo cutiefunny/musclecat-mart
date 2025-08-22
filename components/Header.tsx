@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, Search } from "lucide-react";
-import { useCart } from '@/lib/hooks/useCart';
+import { useCartStore } from '@/lib/hooks/useCart';
 
 export function Header() {
-    const { items } = useCart();
+    const items = useCartStore((state) => state.items);
     const cartCount = items.length;
     const [searchQuery, setSearchQuery] = useState("");
     const pathname = usePathname();

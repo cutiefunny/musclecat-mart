@@ -1,109 +1,82 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { db } from '@/lib/firebase/clientApp';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore'; // setDoc 제거
 import type { CartItem, Product } from '@/types';
 
 interface CartState {
   items: CartItem[];
-  addItem: (product: Product, options: Record<string, string>) => void;
-  removeItem: (cartItemId: string) => void;
-  updateQuantity: (cartItemId: string, quantity: number) => void;
-  clearCart: () => void;
+  addItem: (userId: string, product: Product, options: Record<string, string>) => Promise<void>;
+  removeItem: (userId: string, cartItemId: string) => Promise<void>;
+  updateQuantity: (userId: string, cartItemId: string, quantity: number) => Promise<void>;
+  clearCart: (userId: string) => Promise<void>;
   setCart: (items: CartItem[]) => void;
+  fetchCart: (userId: string) => Promise<void>;
 }
 
-const useCartStore = create<CartState>()(
-  persist(
-    (set, get) => ({
-      items: [],
-      setCart: (items) => set({ items }),
-      addItem: (product, options) => {
-        const cartItemId = `${product.id}-${Object.entries(options).sort().map(([key, value]) => `${key}:${value}`).join(',')}`;
-        const existingItem = get().items.find((item) => item.cartItemId === cartItemId);
-
-        if (existingItem) {
-          set((state) => ({
-            items: state.items.map((item) =>
-              item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
-            ),
-          }));
-        } else {
-          const newItem: CartItem = {
-            cartItemId,
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.images?.[0] || '',
-            quantity: 1,
-            options,
-          };
-          set((state) => ({ items: [...state.items, newItem] }));
-        }
-      },
-      removeItem: (cartItemId) => {
-        set((state) => ({
-          items: state.items.filter((item) => item.cartItemId !== cartItemId),
-        }));
-      },
-      updateQuantity: (cartItemId, quantity) => {
-        if (quantity < 1) return;
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.cartItemId === cartItemId ? { ...item, quantity } : item
-          ),
-        }));
-      },
-      clearCart: () => set({ items: [] }),
-    }),
-    {
-      name: 'cart-storage',
-      storage: createJSONStorage(() => localStorage),
+const useCartStore = create<CartState>((set, get) => ({
+  items: [],
+  setCart: (items) => set({ items }),
+  
+  fetchCart: async (userId) => {
+    if (!userId) return;
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists() && userSnap.data().cart) {
+      set({ items: userSnap.data().cart });
+    } else {
+      set({ items: [] });
     }
-  )
-);
+  },
+
+  addItem: async (userId, product, options) => {
+    const cartItemId = `${product.id}-${Object.entries(options).sort().map(([key, value]) => `${key}:${value}`).join(',')}`;
+    const existingItem = get().items.find((item) => item.cartItemId === cartItemId);
+    let newItems;
+
+    if (existingItem) {
+      newItems = get().items.map((item) =>
+        item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
+      );
+    } else {
+      const newItem: CartItem = {
+        cartItemId,
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.images?.[0] || '',
+        quantity: 1,
+        options,
+      };
+      newItems = [...get().items, newItem];
+    }
+    
+    set({ items: newItems });
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { cart: newItems });
+  },
+
+  removeItem: async (userId, cartItemId) => {
+    const newItems = get().items.filter((item) => item.cartItemId !== cartItemId);
+    set({ items: newItems });
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { cart: newItems });
+  },
+
+  updateQuantity: async (userId, cartItemId, quantity) => {
+    if (quantity < 1) return;
+    const newItems = get().items.map((item) =>
+      item.cartItemId === cartItemId ? { ...item, quantity } : item
+    );
+    set({ items: newItems });
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { cart: newItems });
+  },
+
+  clearCart: async (userId: string) => {
+    set({ items: [] });
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, { cart: [] });
+  },
+}));
 
 export { useCartStore };
-
-export const useCart = () => {
-  const store = useCartStore();
-
-  const syncWithFirestore = async (userId: string) => {
-    if (!userId) return;
-    const cartRef = doc(db, 'carts', userId);
-    const userCartSnap = await getDoc(cartRef);
-    const firestoreItems: CartItem[] = userCartSnap.exists() ? userCartSnap.data().items : [];
-
-    const localItems = useCartStore.getState().items;
-    const mergedItems = [...firestoreItems];
-
-    localItems.forEach(localItem => {
-        const existingIndex = mergedItems.findIndex(item => item.cartItemId === localItem.cartItemId);
-        if (existingIndex > -1) {
-            mergedItems[existingIndex].quantity += localItem.quantity;
-        } else {
-            mergedItems.push(localItem);
-        }
-    });
-    
-    await setDoc(cartRef, { items: mergedItems });
-    store.setCart(mergedItems);
-  };
-
-  const fetchFromFirestore = async (userId: string) => {
-    if (!userId) return;
-    const cartRef = doc(db, 'carts', userId);
-    const cartSnap = await getDoc(cartRef);
-    if (cartSnap.exists()) {
-        store.setCart(cartSnap.data().items);
-    }
-  };
-
-  const saveToFirestore = async (userId: string, items: CartItem[]) => {
-      if (!userId) return;
-      const cartRef = doc(db, 'carts', userId);
-      await setDoc(cartRef, { items });
-  }
-
-  return { ...store, syncWithFirestore, fetchFromFirestore, saveToFirestore };
-};

@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { useCart } from "@/lib/hooks/useCart";
+import { useCartStore } from "@/lib/hooks/useCart";
 
 export default function CartPage() {
-    const { items: cartItems, removeItem, updateQuantity, saveToFirestore } = useCart();
+    const { items: cartItems, removeItem, updateQuantity } = useCartStore();
     const { data: session } = useSession();
     const [loading, setLoading] = useState(true);
 
@@ -19,19 +19,13 @@ export default function CartPage() {
     }, []);
 
     const handleQuantityChange = (cartItemId: string, newQuantity: number) => {
-        if (newQuantity < 1) return;
-        updateQuantity(cartItemId, newQuantity);
-        if (session?.user?.id) {
-            saveToFirestore(session.user.id, cartItems);
-        }
+        if (newQuantity < 1 || !session?.user?.id) return;
+        updateQuantity(session.user.id, cartItemId, newQuantity);
     };
 
     const handleRemoveItem = (cartItemId: string) => {
-        if (window.confirm("이 상품을 장바구니에서 삭제하시겠습니까?")) {
-            removeItem(cartItemId);
-            if (session?.user?.id) {
-                saveToFirestore(session.user.id, cartItems);
-            }
+        if (window.confirm("이 상품을 장바구니에서 삭제하시겠습니까?") && session?.user?.id) {
+            removeItem(session.user.id, cartItemId);
         }
     };
 

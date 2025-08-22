@@ -2,30 +2,17 @@
 
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useCart } from "@/lib/hooks/useCart";
+import { useCartStore } from "@/lib/hooks/useCart";
 
 export default function CartSync() {
   const { data: session, status } = useSession();
-  const { syncWithFirestore, fetchFromFirestore } = useCart();
+  const { fetchCart } = useCartStore();
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      syncWithFirestore(session.user.id);
+    if (status === 'authenticated' && session?.user?.id) {
+      fetchCart(session.user.id);
     }
-  }, [status, session, syncWithFirestore]); // syncWithFirestore 추가
-
-  useEffect(() => {
-      const handleStorageChange = () => {
-          if (status === 'authenticated' && session?.user?.id) {
-              fetchFromFirestore(session.user.id);
-          }
-      };
-      
-      window.addEventListener('storage', handleStorageChange);
-      return () => {
-          window.removeEventListener('storage', handleStorageChange);
-      };
-  }, [status, session, fetchFromFirestore]); // fetchFromFirestore 추가
+  }, [status, session, fetchCart]);
 
   return null;
 }

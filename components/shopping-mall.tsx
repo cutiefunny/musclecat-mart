@@ -2,19 +2,18 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"; // useRouter import 추가
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { db } from "@/lib/firebase/clientApp"
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore" // DocumentData 제거
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore"
 import { Header } from "./Header"
 import { Footer } from "./Footer"
-import { useCart } from "@/lib/hooks/useCart"
 import { useSession } from "next-auth/react"
 import type { Product, Category } from "@/types"
-import { useCartStore } from "@/lib/hooks/useCart" // Zustand 스토어 직접 import
+import { useCartStore } from "@/lib/hooks/useCart"
 
-// --- ⬇️ 옵션 선택 모달 컴포넌트 ⬇️ ---
 function AddToCartModal({
     product,
     onClose,
@@ -88,17 +87,18 @@ export function ShoppingMall({ searchQuery }: { searchQuery?: string }) {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const { addItem, saveToFirestore } = useCart();
+  const { addItem } = useCartStore();
   const { data: session } = useSession();
+  const router = useRouter(); // useRouter 훅 사용
 
-  const handleRealAddToCart = (product: Product, options: Record<string, string>) => {
+  const handleRealAddToCart = async (product: Product, options: Record<string, string>) => {
+    if (!session?.user?.id) {
+        // --- ⬇️ alert 대신 프로필 페이지로 리디렉션 ⬇️ ---
+        router.push('/profile');
+        return;
+    }
     try {
-        addItem(product, options);
-        if (session?.user?.id) {
-            const updatedCart = useCartStore.getState().items;
-            saveToFirestore(session.user.id, updatedCart);
-        }
-        window.dispatchEvent(new Event('cartUpdated'));
+        await addItem(session.user.id, product, options);
     } catch (e) {
         console.error('장바구니에 상품을 담는 중 오류가 발생했습니다:', e);
         alert('장바구니에 상품을 담는 중 오류가 발생했습니다.');
@@ -197,7 +197,6 @@ export function ShoppingMall({ searchQuery }: { searchQuery?: string }) {
         <div className="px-4">
             {searchQuery && (
                 <div className="mb-4">
-                    {/* --- ⬇️ 따옴표를 &apos; 로 수정했습니다 ⬇️ --- */}
                     <h2 className="text-xl font-bold">&apos;{searchQuery}&apos; 검색 결과</h2>
                     <p className="text-sm text-muted-foreground">{filteredProducts.length}개의 상품이 있습니다.</p>
                 </div>

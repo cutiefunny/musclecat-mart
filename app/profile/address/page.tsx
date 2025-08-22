@@ -3,17 +3,20 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { db } from "@/lib/firebase/clientApp";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import type { Address } from "@/types";
+import DaumPostcode, { Address as DaumAddress } from "react-daum-postcode"; // DaumAddress 타입 import
 
 export default function AddressPage() {
     const { data: session, status } = useSession();
+    const router = useRouter();
     const [address, setAddress] = useState<Address>({
         recipient: "",
         phone: "",
@@ -23,22 +26,25 @@ export default function AddressPage() {
     });
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isPostcodeOpen, setIsPostcodeOpen] = useState(false);
 
     useEffect(() => {
+        if (status === "loading") return;
+
         if (status === "authenticated" && session?.user?.id) {
             const fetchAddress = async () => {
-                const addressRef = doc(db, "addresses", session.user.id);
-                const docSnap = await getDoc(addressRef);
-                if (docSnap.exists()) {
-                    setAddress(docSnap.data() as Address);
+                const userRef = doc(db, "users", session.user.id);
+                const docSnap = await getDoc(userRef);
+                if (docSnap.exists() && docSnap.data().address) {
+                    setAddress(docSnap.data().address as Address);
                 }
                 setLoading(false);
             };
             fetchAddress();
         } else if (status === "unauthenticated") {
-            setLoading(false);
+            router.push('/profile');
         }
-    }, [status, session]);
+    }, [status, session, router]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -47,7 +53,7 @@ export default function AddressPage() {
 
     const handleSaveAddress = async () => {
         if (!session?.user?.id) {
-            alert("로그인이 필요합니다.");
+            router.push('/profile');
             return;
         }
 
@@ -58,8 +64,10 @@ export default function AddressPage() {
 
         setIsSaving(true);
         try {
-            const addressRef = doc(db, "addresses", session.user.id);
-            await setDoc(addressRef, address);
+            const userRef = doc(db, "users", session.user.id);
+            await updateDoc(userRef, {
+                address: address
+            });
             alert("배송지 정보가 저장되었습니다.");
         } catch (error) {
             console.error("배송지 저장 실패:", error);
@@ -68,21 +76,31 @@ export default function AddressPage() {
             setIsSaving(false);
         }
     };
+    
+    // --- ⬇️ data 파라미터의 타입을 DaumAddress로 지정합니다 ⬇️ ---
+    const handlePostcodeComplete = (data: DaumAddress) => {
+        setAddress(prev => ({
+            ...prev,
+            postalCode: data.zonecode,
+            address: data.roadAddress,
+        }));
+        setIsPostcodeOpen(false);
+    };
 
-    if (loading) {
+    const handlePostcodeToggle = () => {
+        setIsPostcodeOpen(!isPostcodeOpen);
+    };
+
+    if (loading || status === 'loading') {
         return <div className="flex justify-center items-center h-screen">로딩 중...</div>;
     }
 
     if (status === "unauthenticated") {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <p>로그인이 필요합니다.</p>
-            </div>
-        );
+        return <div className="flex justify-center items-center h-screen">로그인 페이지로 이동 중...</div>;
     }
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen bg-muted/40">
             <header className="sticky top-0 z-50 bg-card border-b border-border px-4 py-3">
                 <div className="relative flex items-center justify-center">
                     <Link href="/profile" className="absolute left-0">
@@ -95,36 +113,50 @@ export default function AddressPage() {
             </header>
 
             <main className="flex-grow p-4 pb-20">
-                <div className="space-y-4">
-                    <div>
+                <div className="space-y-6 bg-card p-6 rounded-lg shadow-sm">
+                    <div className="space-y-2">
                         <Label htmlFor="recipient">받는 사람</Label>
                         <Input id="recipient" name="recipient" value={address.recipient} onChange={handleInputChange} placeholder="이름" />
                     </div>
-                    <div>
+                    <div className="space-y-2">
                         <Label htmlFor="phone">연락처</Label>
                         <Input id="phone" name="phone" type="tel" value={address.phone} onChange={handleInputChange} placeholder="'-' 없이 숫자만 입력" />
                     </div>
-                    <div>
+                    <div className="space-y-2">
                         <Label htmlFor="postalCode">우편번호</Label>
                         <div className="flex gap-2">
-                            <Input id="postalCode" name="postalCode" value={address.postalCode} onChange={handleInputChange} placeholder="우편번호" readOnly />
-                            <Button type="button" variant="outline" onClick={() => alert('우편번호 검색 기능은 준비 중입니다.')}>검색</Button>
+                            <Input id="postalCode" name="postalCode" value={address.postalCode} onChange={handleInputChange} placeholder="우편번호" readOnly className="bg-muted/50" />
+                            <Button type="button" variant="outline" onClick={handlePostcodeToggle}>검색</Button>
                         </div>
                     </div>
-                    <div>
+
+                    <div className="space-y-2">
                         <Label htmlFor="address">주소</Label>
-                        <Input id="address" name="address" value={address.address} onChange={handleInputChange} placeholder="기본 주소" readOnly />
+                        <Input id="address" name="address" value={address.address} onChange={handleInputChange} placeholder="기본 주소" readOnly className="bg-muted/50" />
                     </div>
-                    <div>
+                    <div className="space-y-2">
                         <Label htmlFor="detailAddress">상세주소</Label>
                         <Input id="detailAddress" name="detailAddress" value={address.detailAddress} onChange={handleInputChange} placeholder="상세 주소를 입력하세요" />
                     </div>
 
-                    <Button onClick={handleSaveAddress} disabled={isSaving} className="w-full">
+                    <Button onClick={handleSaveAddress} disabled={isSaving} className="w-full" size="lg">
                         {isSaving ? "저장 중..." : "저장하기"}
                     </Button>
                 </div>
             </main>
+
+            {isPostcodeOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg w-full max-w-md shadow-xl">
+                        <div className="flex justify-end p-2">
+                           <Button onClick={handlePostcodeToggle} variant="ghost" size="icon" className="rounded-full">
+                               <X className="h-5 w-5"/>
+                           </Button>
+                        </div>
+                        <DaumPostcode onComplete={handlePostcodeComplete} style={{ height: "50vh" }} />
+                    </div>
+                </div>
+            )}
 
             <Footer />
         </div>

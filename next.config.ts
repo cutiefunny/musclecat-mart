@@ -16,6 +16,12 @@ const nextConfig = {
         port: "",
         pathname: "**",
       },
+      {
+        protocol: "https" as const,
+        hostname: "phinf.pstatic.net",
+        port: "",
+        pathname: "**",
+      },
     ],
   },
 };

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation"; // useRouter import 추가
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -15,23 +16,27 @@ interface Order {
 
 export default function OrdersPage() {
     const { status } = useSession();
-    const [orders] = useState<Order[]>([]); // setOrders 제거
+    const router = useRouter(); // useRouter 훅 사용
+    const [orders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setLoading(false);
-    }, [status]);
+        if (status === 'loading') return; // 로딩 중일때는 대기
 
-    if (status === "loading" || loading) {
+        if (status === "unauthenticated") {
+            // --- ⬇️ 비로그인 시 프로필 페이지로 리디렉션 ⬇️ ---
+            router.push('/profile');
+        } else {
+            setLoading(false);
+        }
+    }, [status, router]);
+
+    if (loading || status === 'loading') {
         return <div className="flex justify-center items-center h-screen">로딩 중...</div>;
     }
 
     if (status === "unauthenticated") {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <p>로그인이 필요합니다.</p>
-            </div>
-        );
+        return <div className="flex justify-center items-center h-screen">로그인 페이지로 이동 중...</div>;
     }
     
     return (
