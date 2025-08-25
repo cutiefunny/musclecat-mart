@@ -197,8 +197,6 @@ export function ShoppingMall({ searchQuery }: { searchQuery?: string }) {
         <div className="px-4">
             {searchQuery && (
                 <div className="mb-4">
-                    <h2 className="text-xl font-bold">&apos;{searchQuery}&apos; 검색 결과</h2>
-                    <p className="text-sm text-muted-foreground">{filteredProducts.length}개의 상품이 있습니다.</p>
                 </div>
             )}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">

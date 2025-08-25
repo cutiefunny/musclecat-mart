@@ -36,7 +36,7 @@ export function Header() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder="상품을 검색해보세요..."
+                            placeholder="Search"
                             className="w-full pl-10"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
